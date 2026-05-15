@@ -1,31 +1,25 @@
 """
 chat.py — Lógica principal del chatbot
 
-Este archivo orquesta todo: recibe el mensaje, consulta la memoria,
-construye el prompt, llama al LLM y guarda la respuesta.
-
 """
 
 from groq import Groq
 from database import SessionLocal, User, Message
+from personality import analyze_conversation, get_user_profile
 from datetime import datetime, timezone
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Cliente de Groq
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 CHATBOT_NAME = os.getenv("CHATBOT_NAME", "Aria")
 
 
 def get_conversation_history(db, session_id: str, limit: int = 10) -> list:
-    """
-    Recupera los últimos mensajes de la conversación.
-    Esto es la memoria a corto plazo del chatbot.
-    limit=10 significa que recuerda los últimos 10 mensajes.
-    """
+    """Recupera los últimos mensajes de la conversación (memoria a corto plazo)."""
     messages = (
         db.query(Message)
         .filter(Message.session_id == session_id)
@@ -33,42 +27,51 @@ def get_conversation_history(db, session_id: str, limit: int = 10) -> list:
         .limit(limit)
         .all()
     )
-    # Los devolvemos en orden cronológico (del más antiguo al más nuevo)
     return [{"role": m.role, "content": m.content} for m in reversed(messages)]
 
 
-def build_system_prompt(user: User) -> str:
+def build_system_prompt(user: User, profile: dict) -> str:
     """
-    Construye el system prompt del chatbot.
-    El system prompt es el mensaje inicial que define
-    cómo se comporta el chatbot en toda la conversación.
+    Construye el system prompt combinando la personalidad base
+    con lo aprendido sobre el usuario en sesiones anteriores.
     """
     name = user.name if user.name else "usuario"
+
+    # Información aprendida sobre el usuario
+    interests = profile.get("interests", [])
+    tone = profile.get("tone", "informal")
+    preferred_length = profile.get("preferred_response_length", "media")
+    other = profile.get("other", "")
+
+    interests_text = ", ".join(interests) if interests else "desconocidos aún"
 
     return f"""Eres {CHATBOT_NAME}, un asistente inteligente y amigable con personalidad propia.
 
 Tu personalidad:
-- Eres curioso, empático y algo humor
-- Te adaptas al tono del usuario (si es formal, tú también; si es informal, tú también)
-- Recuerdas lo que el usuario te ha contado durante la conversación
-- Haces preguntas cuando quieres saber más sobre el usuario
+- Eres curioso, empático y con buen humor
+- Te adaptas completamente al usuario
+- Recuerdas lo que el usuario te ha contado
 
-Información sobre este usuario:
+Lo que sabes de este usuario:
 - Nombre: {name}
-- Mensajes enviados: {user.message_count}
+- Intereses: {interests_text}
+- Tono preferido: {tone}
+- Prefiere respuestas: {preferred_length}
+- Otros datos: {other if other else "ninguno aún"}
+- Mensajes enviados en total: {user.message_count}
 
 Instrucciones:
-- Responde siempre en el idioma que use el usuario
-- Sé conciso pero completo
+- Responde en el idioma del usuario
+- Usa un tono {tone}
+- Da respuestas de longitud {preferred_length}
+- Si conoces sus intereses, menciónalos cuando sea natural
 - Si el usuario te dice su nombre, úsalo de vez en cuando
-- Nunca digas que eres una IA de Groq o Meta, simplemente eres {CHATBOT_NAME}
+- Nunca digas que eres una IA de Groq o Meta, eres {CHATBOT_NAME}
 """
 
 
 async def process_message(session_id: str, message: str, user_name: str | None = None) -> dict:
-    """
-    Procesa un mensaje del usuario y devuelve la respuesta del chatbot.
-    """
+    """Procesa un mensaje del usuario y devuelve la respuesta del chatbot."""
     db = SessionLocal()
     try:
         # 1. Buscar o crear usuario 
@@ -87,8 +90,9 @@ async def process_message(session_id: str, message: str, user_name: str | None =
         if user_name and not user.name:
             user.name = user_name
 
-        # 2. Recuperar historial (memoria a corto plazo)
+        # 2. Recuperar historial y perfil
         history = get_conversation_history(db, session_id)
+        profile = get_user_profile(session_id)
 
         # 3. Guardar mensaje del usuario
         user_msg = Message(
@@ -101,25 +105,23 @@ async def process_message(session_id: str, message: str, user_name: str | None =
         user.last_seen = datetime.now(timezone.utc)
         db.commit()
 
-        # 4. Construir los mensajes para Groq
-        # Groq recibe: system prompt + historial + mensaje actual
+        # 4. Llamar a Groq
         groq_messages = history + [{"role": "user", "content": message}]
 
-        # 5. Llamar a Groq
         completion = client.chat.completions.create(
             model=MODEL,
             messages=[
-                {"role": "system", "content": build_system_prompt(user)},
+                {"role": "system", "content": build_system_prompt(user, profile)},
                 *groq_messages
             ],
             max_tokens=1000,
-            temperature=0.7  # 0=muy predecible, 1=muy creativo
+            temperature=0.7
         )
 
         bot_response = completion.choices[0].message.content
         tokens_used = completion.usage.total_tokens
 
-        # 6. Guardar respuesta del bot
+        # 5. Guardar respuesta del bot
         bot_msg = Message(
             session_id=session_id,
             role="assistant",
@@ -128,6 +130,11 @@ async def process_message(session_id: str, message: str, user_name: str | None =
         )
         db.add(bot_msg)
         db.commit()
+
+        # 6. Analizar conversación cada 5 mensajes
+        # Así el chatbot aprende sobre el usuario sin hacerlo en cada mensaje
+        if user.message_count % 5 == 0:
+            analyze_conversation(session_id)
 
         return {
             "response": bot_response,
