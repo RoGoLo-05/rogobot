@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aria — Chatbot IA</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <!-- Pantalla de bienvenida -->
+    <div id="welcome-screen">
+        <div class="welcome-box">
+            <div class="bot-avatar large">🤖</div>
+            <h1>Hola, soy <span class="highlight">Aria</span></h1>
+            <p>Tu asistente inteligente con memoria propia.<br>Aprendo y me adapto a ti con cada conversación.</p>
+            <input type="text" id="name-input" placeholder="¿Cómo te llamas?" maxlength="50"/>
+            <button id="start-btn">Empezar a chatear</button>
+        </div>
+    </div>
+
+    <!-- Pantalla del chat -->
+    <div id="chat-screen" class="hidden">
+
+        <!-- Cabecera -->
+        <header>
+            <div class="header-left">
+                <div class="bot-avatar small">🤖</div>
+                <div>
+                    <h2>Aria</h2>
+                    <span class="status">En línea</span>
+                </div>
+            </div>
+            <button id="clear-btn" title="Borrar conversación">🗑️</button>
+        </header>
+
+        <!-- Mensajes -->
+        <div id="messages-container">
+            <div id="messages"></div>
+        </div>
+
+        <!-- Input -->
+        <div id="input-area">
+            <input type="text" id="message-input" placeholder="Escribe un mensaje..." maxlength="500"/>
+            <button id="send-btn">➤</button>
+        </div>
+
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
