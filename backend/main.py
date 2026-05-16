@@ -140,15 +140,21 @@ async def get_history(session_id: str, limit: int = 20):
 @app.delete("/history/{session_id}")
 async def clear_history(session_id: str):
     """
-    DELETE /history/{session_id} — Borra el historial de un usuario.
+    DELETE /history/{session_id} — Borra el historial de mensajes
+    pero MANTIENE el perfil aprendido del usuario.
     """
     from database import SessionLocal, Message, User
+    from embeddings import delete_user_collection
 
     db = SessionLocal()
     try:
+        # Borrar solo los mensajes, NO el usuario ni su perfil
         db.query(Message).filter(Message.session_id == session_id).delete()
-        db.query(User).filter(User.session_id == session_id).delete()
         db.commit()
+
+        # Borrar embeddings
+        delete_user_collection(session_id)
+
         return {"status": "ok", "message": "Historial borrado correctamente"}
     finally:
         db.close()
