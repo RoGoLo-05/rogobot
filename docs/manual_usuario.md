@@ -48,7 +48,7 @@ y volverás a la pantalla de bienvenida.
 ## Preguntas frecuentes
 
 **¿Aria recuerda mis conversaciones anteriores?**
-Sí. Cada vez que envías 5 mensajes, Aria analiza la conversación
+Sí. Cada vez que envías 3 mensajes, Aria analiza la conversación
 y actualiza su conocimiento sobre ti. La próxima vez que entres,
 ya sabrá tus intereses y preferencias.
 

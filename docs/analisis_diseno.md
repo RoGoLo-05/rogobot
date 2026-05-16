@@ -147,6 +147,6 @@ Para un proyecto académico es la opción más accesible.
 SQLite no requiere instalar ni configurar nada. Para el alcance
 de este proyecto es más que suficiente.
 
-**¿Por qué analizar el perfil cada 5 mensajes?**
+**¿Por qué analizar el perfil cada 3 mensajes?**
 Para no hacer una llamada extra a la API en cada mensaje,
 lo que encarecería el uso y ralentizaría las respuestas.
