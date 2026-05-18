@@ -60,6 +60,7 @@ http://localhost:8000
 
 ## 📁 Estructura del proyecto
 
+```
 rogobot/
 ├── backend/
 │   ├── main.py          # Servidor FastAPI + endpoints
@@ -73,6 +74,7 @@ rogobot/
 ├── docs/                # Documentación del proyecto
 ├── .env.example         # Plantilla de configuración
 └── requirements.txt     # Dependencias
+```
 
 ## 📚 Documentación
 
