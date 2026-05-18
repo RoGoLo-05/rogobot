@@ -29,6 +29,7 @@ y adapte su comportamiento a cada usuario, usando técnicas modernas de NLP.
 | RNF04 | Código comentado y mantenible |
 
 ## 3. Arquitectura del sistema
+```
 ┌─────────────────────────────────────────────┐
 │                  USUARIO                    │
 └───────────────────┬─────────────────────────┘
@@ -55,6 +56,7 @@ y adapte su comportamiento a cada usuario, usando técnicas modernas de NLP.
 │  LLaMA 3.3   │ │    NLP     │ │  Database  │
 │      70B     │ │            │ │            │
 └──────────────┘ └────────────┘ └────────────┘
+```
 
 ## 4. Diseño de la base de datos
 
@@ -88,6 +90,7 @@ y adapte su comportamiento a cada usuario, usando técnicas modernas de NLP.
 | created_at   | DATETIME      | Fecha del snapshot                      |
 
 ## 5. Flujo de una conversación
+```
 Usuario escribe mensaje
 │
 ▼
@@ -117,6 +120,7 @@ y se actualiza el perfil del usuario
 │
 ▼
 Se devuelve la respuesta al frontend
+```
 
 ## 6. Tecnologías utilizadas
 
